@@ -537,6 +537,82 @@ class EDXSpectrum(object):
         return int(round((en_temp - self.calibAbs) / self.calibLin))
 
 
+class XRFSpectrum(object):
+
+    def __init__(self, spectrum):
+        """
+        Wrap the objectified bruker XRF spectrum xml part
+        to the python object, leaving all the xml and bruker clutter behind.
+        Note: Until HyperSpy natively supports XRF signals, this method 
+        results in an EDSSpectrum object (which is not strictly correct)
+
+        Arguments:
+        spectrum -- lxml objectified xml where spectrum.attrib['Type'] should
+            be 'TRTSpectrum'
+        """
+        TRTHeader = spectrum.TRTHeaderedClass
+        hardware_header = TRTHeader.xpath(
+            "ClassInstance[@Type='TRTSpectrumHardwareHeader']")[0]
+        detector_header = TRTHeader.xpath(
+            "ClassInstance[@Type='TRTDetectorHeader']")[0]
+        xrf_header = TRTHeader.xpath("ClassInstance[@Type='TRTXrfHeader']")[0]
+        spectrum_header = spectrum.xpath("ClassInstance["
+                                         "@Type='TRTSpectrumHeader']")[0]
+
+        # map stuff from harware xml branch:
+        self.hardware_metadata = dictionarize(hardware_header)
+        self.amplification = self.hardware_metadata['Amplification']  # USED
+
+        # map stuff from detector xml branch
+        self.detector_metadata = dictionarize(detector_header)
+        self.detector_type = self.detector_metadata['Type']  # USED
+
+        # decode silly hidden detector layer info:
+        det_l_str = self.detector_metadata['DetLayers']
+        dec_det_l_str = codecs.decode(det_l_str.encode('ascii'), 'base64')
+        mini_xml = objectify.fromstring(unzip_block(dec_det_l_str))
+        self.detector_metadata['DetLayers'] = {}  # Overwrite with dict
+        for i in mini_xml.getchildren():
+            self.detector_metadata['DetLayers'][i.tag] = dict(i.attrib)
+
+        # map stuff from esma xml branch:
+        self.xrf_metadata = dictionarize(xrf_header)
+        # dictionary of common X-ray tube targets and their energies
+        # NB: all Bruker targets appear to be Rh, but this is not certain
+        target_to_energy = {'45': 20.217,  # Rh-Ka
+                            '47': 22.166,  # Ag-Ka
+                            '79': 9.712}   # Au-La
+        # "Energy" isn't as relevant for XRF as EDS, but to get a value:
+        if str(self.xrf_metadata['Anode']) in target_to_energy:
+            self.hv = target_to_energy[str(self.xrf_metadata['Anode'])]
+        else:
+            self.hv = 0
+        self.elevationAngle = self.xrf_metadata['DetectionAngle']
+        self.spotSize = self.xrf_metadata['SpotSize']
+
+        # map stuff from spectra xml branch:
+        self.spectrum_metadata = dictionarize(spectrum_header)
+        self.calibAbs = self.spectrum_metadata['CalibAbs']
+        self.calibLin = self.spectrum_metadata['CalibLin']
+        self.chnlCnt = self.spectrum_metadata['ChannelCount']
+
+        # main data:
+        self.data = np.fromstring(str(spectrum.Channels), dtype='Q', sep=",")
+        self.energy = np.arange(self.calibAbs,
+                                self.calibLin * self.chnlCnt + self.calibAbs,
+                                self.calibLin)  # the x axis for ploting spectra
+
+    def energy_to_channel(self, energy, kV=True):
+        """ convert energy to channel index,
+        optional kwarg 'kV' (default: True) should be set to False
+        if given energy units is in V"""
+        if not kV:
+            en_temp = energy / 1000.
+        else:
+            en_temp = energy
+        return int(round((en_temp - self.calibAbs) / self.calibLin))
+
+
 class HyperHeader(object):
     """Wrap Bruker HyperMaping xml header into python object.
 
@@ -582,7 +658,11 @@ class HyperHeader(object):
         self.mapping_count = int(root.DetectorCount)
         #self.channel_factors = {}
         self.spectra_data = {}
-        self._set_sum_edx(root)
+        if instrument:
+            if instrument.lower() == 'xrf':
+                self._set_sum_xrf(root)
+        else:
+            self._set_sum_edx(root)
 
     def _set_microscope(self, root):
         """set microscope metadata from objectified xml part (TRTSEMData,
@@ -731,6 +811,11 @@ class HyperHeader(object):
             # self.channel_factors[i] = int(root.xpath("ChannelFactor" +
             #                                         str(i))[0])
             self.spectra_data[i] = EDXSpectrum(root.xpath("SpectrumData" +
+                                                          str(i))[0].ClassInstance)
+
+    def _set_sum_xrf(self, root):
+        for i in range(self.mapping_count):
+            self.spectra_data[i] = XRFSpectrum(root.xpath("SpectrumData" +
                                                           str(i))[0].ClassInstance)
 
     def estimate_map_channels(self, index=0):
