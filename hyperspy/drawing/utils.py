@@ -172,6 +172,11 @@ def merge_color_channels(im_list, color_list=None,
         Either 'single' or 'global'; controls whether the color scales are
         normalized on a per-image basis (``'single'``), or globally over all
         images (``'global'``)
+    plot : bool
+        Controls plotting output. If True (default), the method will plot the
+        results of the merged images in addition to returning the merged RGB
+        matrix; if False, the method will silently return the RGB matrix
+        without plotting.
 
     Returns
     -------
@@ -259,12 +264,12 @@ def merge_color_channels(im_list, color_list=None,
                                  "yellow, magenta, or cyan.")
         else:
             raise ValueError("Unknown normalization method."
-                             "Must be 'individual' or 'global'.")
+                             "Must be 'single' or 'global'.")
 
     for i in color_list:
         images['rgb'] += images[i]
 
-    if not dont_plot:
+    if plot:
         figure = plt.figure()
         ax = figure.add_subplot(111)
         ax.frameon = False
