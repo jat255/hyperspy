@@ -156,20 +156,28 @@ def key_press_handler_custom(event, canvas):
     if event.key not in ['k', 'l', 'L']:
         key_press_handler(event, canvas, canvas.manager.toolbar)
 
+
 def merge_color_channels(im_list, color_list=None,
-                         normalization='single', dont_plot=False):
-    """Merge up to six gray scale images into color composite.
+                         normalization='single', plot=True):
+    """
+    Merge up to six gray scale images into a color composite.
 
     Parameters
     ----------
-    im_list : list of Signal2D instances
-    color_list : list of color strings
-    normalization : {'single', 'global'}
-    dont_plot : bool
+    im_list : list of Signal2D instances (images) to be merged
+    color_list : list of strings
+        Should be valid matplotlib color strings, such as 'red', 'green',
+        'blue, etc.
+    normalization : str
+        Either 'single' or 'global'; controls whether the color scales are
+        normalized on a per-image basis (``'single'``), or globally over all
+        images (``'global'``)
 
     Returns
     -------
     array: RGB matrix
+        A numpy array (same width and height as images) with three channels
+        containing the merged RGB data
 
     """
     color_cycle = ['red', 'green', 'blue', 'cyan', 'yellow', 'magenta']
@@ -183,7 +191,7 @@ def merge_color_channels(im_list, color_list=None,
     
     height, width = im_list[0].data.shape[:2]
 
-    images = {}
+    images = dict()
     images['rgb'] = np.zeros([height, width, 3])
     for i in color_list:
         images[i] = np.zeros([height, width, 3])
@@ -266,6 +274,7 @@ def merge_color_channels(im_list, color_list=None,
         return figure, images
     else:
         return images
+
 
 def on_figure_window_close(figure, function):
     """Connects a close figure signal to a given function.
