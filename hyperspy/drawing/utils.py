@@ -185,6 +185,8 @@ def merge_color_channels(im_list, color_list=None,
         containing the merged RGB data
 
     """
+    # TODO: Use color_cycler from matplotlib to prevent limit to number of
+    #  images
     color_cycle = ['red', 'green', 'blue', 'cyan', 'yellow', 'magenta']
     if len(im_list) > 6:
         raise ValueError('List must be at most 6 images long')
@@ -193,7 +195,8 @@ def merge_color_channels(im_list, color_list=None,
     if not all(x in color_cycle for x in color_list):
         raise ValueError("Invalid color. Only red, green, blue, cyan, yellow "
                          "and magenta allowed")
-    
+
+    # TODO: check to ensure that all images are same shape - error if not
     height, width = im_list[0].data.shape[:2]
 
     images = dict()
