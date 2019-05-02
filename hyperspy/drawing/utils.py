@@ -204,70 +204,54 @@ def merge_color_channels(im_list, color_list=None,
     for i in color_list:
         images[i] = np.zeros([height, width, 3])
 
-    for i in range(0, len(im_list)):
-        if normalization == 'single':
-            if color_list[i] == 'red':
-                images['red'][:, :, 0] = \
-                    im_list[i].data/im_list[i].data.max()
-            elif color_list[i] == 'green':
-                images['green'][:, :, 1] = \
-                    im_list[i].data/im_list[i].data.max()
-            elif color_list[i] == 'blue':
-                images['blue'][:, :, 2] = \
-                    im_list[i].data/im_list[i].data.max()
-            elif color_list[i] == 'yellow':
-                images['yellow'][:, :, 0] = \
-                    im_list[i].data/im_list[i].data.max()
-                images['yellow'][:, :, 1] = \
-                    im_list[i].data/im_list[i].data.max()
-            elif color_list[i] == 'magenta':
-                images['magenta'][:, :, 0] = \
-                    im_list[i].data/im_list[i].data.max()
-                images['magenta'][:, :, 2] = \
-                    im_list[i].data/im_list[i].data.max()
-            elif color_list[i] == 'cyan':
-                images['cyan'][:, :, 1] = \
-                    im_list[i].data/im_list[i].data.max()
-                images['cyan'][:, :, 2] = \
-                    im_list[i].data/im_list[i].data.max()
-            else:
-                raise ValueError("Unknown color. Must be red, green, blue, "
-                                 "yellow, magenta, or cyan")
-        elif normalization == 'global':
+    def _normalize_channels(im_list, color_list, method, iter_number):
+        # determine normalization denominator
+        if method == 'single':
+            norm_value = im_list[iter_number].data.max()
+        elif method == 'global':
             maxvals = np.zeros(len(im_list))
             for im_num in range(0, len(im_list)):
                 maxvals[im_num] = im_list[im_num].data.max()
             maxval = maxvals.max()
-            if color_list[i] == 'red':
-                images['red'][:, :, 0] = \
-                    im_list[i].data/maxval
-            elif color_list[i] == 'green':
-                images['green'][:, :, 1] = \
-                    im_list[i].data/maxval
-            elif color_list[i] == 'blue':
-                images['blue'][:, :, 2] = \
-                    im_list[i].data/maxval
-            elif color_list[i] == 'yellow':
-                images['yellow'][:, :, 0] = \
-                    im_list[i].data/maxval
-                images['yellow'][:, :, 1] = \
-                    im_list[i].data/maxval
-            elif color_list[i] == 'magenta':
-                images['magenta'][:, :, 0] = \
-                    im_list[i].data/maxval
-                images['magenta'][:, :, 2] = \
-                    im_list[i].data/maxval
-            elif color_list[i] == 'cyan':
-                images['cyan'][:, :, 1] = \
-                    im_list[i].data/maxval
-                images['cyan'][:, :, 2] = \
-                    im_list[i].data/maxval
-            else:
-                raise ValueError("Unknown color. Must be red, green, blue, "
-                                 "yellow, magenta, or cyan.")
+            norm_value = maxval
         else:
             raise ValueError("Unknown normalization method."
                              "Must be 'single' or 'global'.")
+
+        if color_list[iter_number] == 'red':
+            images['red'][:, :, 0] = \
+                im_list[iter_number].data / norm_value  # red channel
+        elif color_list[iter_number] == 'green':
+            images['green'][:, :, 1] = \
+                im_list[iter_number].data / norm_value  # green channel
+        elif color_list[iter_number] == 'blue':
+            images['blue'][:, :, 2] = \
+                im_list[iter_number].data / norm_value  # blue channel
+        elif color_list[iter_number] == 'yellow':
+            images['yellow'][:, :, 0] = \
+                im_list[iter_number].data / norm_value  # red channel +
+            images['yellow'][:, :, 1] = \
+                im_list[iter_number].data / norm_value  # green channel
+        elif color_list[iter_number] == 'magenta':
+            images['magenta'][:, :, 0] = \
+                im_list[iter_number].data / norm_value  # red channel +
+            images['magenta'][:, :, 2] = \
+                im_list[iter_number].data / norm_value  # blue channel
+        elif color_list[iter_number] == 'cyan':
+            images['cyan'][:, :, 1] = \
+                im_list[iter_number].data / norm_value  # green channel +
+            images['cyan'][:, :, 2] = \
+                im_list[iter_number].data / norm_value  # blue channel
+        else:
+            raise ValueError("Unknown color. Must be red, green, blue, "
+                             "yellow, magenta, or cyan.")
+
+    # TODO: check how ImageJ does this (it's probably the same)
+    #  https://imagej.nih.gov/ij/developer/source/ij/plugin/RGBStackMerge.java.html
+    #  ImageJ also includes a grayscale image
+    for i in range(0, len(im_list)):
+        # TODO: move normalization into function
+        _normalize_channels(im_list, color_list, normalization, i)
 
     for i in color_list:
         images['rgb'] += images[i]
