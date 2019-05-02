@@ -158,7 +158,8 @@ def key_press_handler_custom(event, canvas):
 
 
 def merge_color_channels(im_list, color_list=None,
-                         normalization='single', plot=True):
+                         normalization='single', plot=True,
+                         legend=None):
     """
     Merge up to six gray scale images into a color composite.
 
@@ -177,6 +178,9 @@ def merge_color_channels(im_list, color_list=None,
         results of the merged images in addition to returning the merged RGB
         matrix; if False, the method will silently return the RGB matrix
         without plotting.
+    legend : None or list of str
+        Legend for each color to include in the plotted output. Should be one
+        string for each image in ``im_list``
 
     Returns
     -------
@@ -262,6 +266,12 @@ def merge_color_channels(im_list, color_list=None,
         ax.frameon = False
         ax.set_axis_off()
         ax.imshow(images['rgb'], interpolation='nearest')
+
+        if legend is not None:
+            # TODO: add a legend capability (as you'd have with elemental maps,
+            #  for instance)
+            pass
+
         figure.canvas.draw_idle()
         return figure, images
     else:
