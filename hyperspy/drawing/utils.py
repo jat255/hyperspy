@@ -189,8 +189,7 @@ def merge_color_channels(im_list, color_list=None,
         containing the merged RGB data
 
     """
-    # TODO: Use color_cycler from matplotlib to prevent limit to number of
-    #  images
+    # TODO: Can itertools.cycle be used here to remove the 6 image limit?
     color_cycle = ['red', 'green', 'blue', 'cyan', 'yellow', 'magenta']
     if len(im_list) > 6:
         raise ValueError('List must be at most 6 images long')
@@ -200,8 +199,16 @@ def merge_color_channels(im_list, color_list=None,
         raise ValueError("Invalid color. Only red, green, blue, cyan, yellow "
                          "and magenta allowed")
 
-    # TODO: check to ensure that all images are same shape - error if not
-    height, width = im_list[0].data.shape[:2]
+    # shapes is (N, 2) numpy array containing the height and width of each image
+    shapes = np.asarray([im.data.shape[:2] for im in im_list])
+    # Compare all rows of shapes to first row, and check if all rows in each
+    # column are identical
+    isequal = np.all(shapes == shapes[0, :], axis=0)
+    # isequal should be [True, True], if it's not, raise an error:
+    if not np.all(isequal):
+        raise ValueError("All images must be the same shape to build "
+                         "composite. Image shapes were: \n{}".format(shapes))
+    height, width = shapes[0, :]
 
     images = dict()
     images['rgb'] = np.zeros([height, width, 3])
