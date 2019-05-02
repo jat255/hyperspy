@@ -235,8 +235,8 @@ def merge_color_channels(im_list, color_list=None,
                                  "yellow, magenta, or cyan")
         elif normalization == 'global':
             maxvals = np.zeros(len(im_list))
-            for i in range(0, len(im_list)):
-                maxvals[i] = im_list[i].data.max()
+            for im_num in range(0, len(im_list)):
+                maxvals[im_num] = im_list[im_num].data.max()
             maxval = maxvals.max()
             if color_list[i] == 'red':
                 images['red'][:, :, 0] = \
