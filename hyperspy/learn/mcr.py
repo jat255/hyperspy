@@ -240,8 +240,8 @@ def mcrals(self,
             factors_out = fitmcr.ST_opt_.T
 
     else:
-        raise ValueError(f"'simplicity' must be either 'spatial' or"
-                         f"'spectral'."
+        raise ValueError(f"'simplicity' must be either 'spatial' or "
+                         f"'spectral'. "
                          f"{str(simplicity)} was provided.")
 
     # MCR can return NaNs at certain channels in the event a signal channel

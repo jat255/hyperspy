@@ -133,10 +133,11 @@ class TestDataIntegrity:
         self.s.isig[50] = 0
         self.s.decomposition()
 
-    def test_zero_catch(self):
-        with pytest.raises(ValueError):
-            self.s.decomposition(algorithm='MCR', output_dimension=3,
-                                 simplicity='spatial')
+    def test_zero_in_factor(self, caplog):
+        self.s.decomposition(algorithm='MCR', output_dimension=3,
+                             simplicity='spatial')
+
+        assert 'NaN values were detected in the MCR factors' in caplog.text
 
     def test_no_factors(self):
         self.s.learning_results.factors = None
@@ -158,9 +159,14 @@ class TestParameters:
         np.random.seed(1)
         orig_loadings = np.random.random((100, 3))
         self.s = Signal1D(np.dot(orig_loadings, orig_factors))
+        # set signal channel to zero
         self.s.isig[50] = 0
         self.s.decomposition()
 
     def test_simplicity(self):
-        with pytest.raises(ValueError):
-            self.s.decomposition(algorithm='MCR', simplicity='something')
+        with pytest.raises(ValueError, match='\'simplicity\' must be either '
+                                             '\'spatial\' or \'spectral\'. '
+                                             'something was provided.'):
+            self.s.decomposition(algorithm='MCR',
+                                 output_dimension=3,
+                                 simplicity='something')
