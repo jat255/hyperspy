@@ -109,6 +109,7 @@ def mcrals(self,
                          "prior to using the MCR technique.")
 
     # DONE: docs for simplicity should give explicit values
+    # TODO: allow users to supply their own factors
 
     factors = self.get_decomposition_factors()
     loadings = self.get_decomposition_loadings()
@@ -132,15 +133,7 @@ def mcrals(self,
                          f"{factors.axes_manager.navigation_size}.")
 
     # Select components to fit
-    if number_of_components is not None:
-        comp_list = range(number_of_components)
-    else:
-        if lr.output_dimension is not None:
-            number_of_components = lr.output_dimension
-            comp_list = range(number_of_components)
-        else:
-            raise ValueError(
-                "No `number_of_components` or `comp_list` provided.")
+    comp_list = range(number_of_components)
     loadings = stack([loadings.inav[i] for i in comp_list])
     factors = stack([factors.inav[i] for i in comp_list])
 
@@ -254,13 +247,17 @@ def mcrals(self,
                         'by the presence of uniformly zero-valued signal '
                         'channels.')
         factors_out = np.nan_to_num(factors_out)
-    if np.isnan(loadings_out).sum():
-        _logger.warning('NaN values were detected in the MCR loadings. They '
-                        'have been replaced with zeros, but please check that '
-                        'the output is as expected. This is typically caused '
-                        'by the presence of uniformly zero-valued signal '
-                        'channels.')
-        loadings_out = np.nan_to_num(loadings_out)
+
+    # # NOTE: MCR does not seem to produce NaN values in the loadings when a
+    # # pixel is zero at all signal positions (like above for the factors),
+    # # but in the this code is left here in case it's needed later
+    # if np.isnan(loadings_out).sum():
+    #     _logger.warning('NaN values were detected in the MCR loadings. They '
+    #                     'have been replaced with zeros, but please check that'
+    #                     ' the output is as expected. This is typically caused'
+    #                     ' by the presence of uniformly zero-valued signal '
+    #                     'channels.')
+    #     loadings_out = np.nan_to_num(loadings_out)
 
     factors_out = factors_out / factors_out.sum(0)
     loadings_out = loadings_out / loadings_out.sum(0)
